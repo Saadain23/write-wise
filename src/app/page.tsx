@@ -100,7 +100,7 @@ export default function Home() {
   const [sidebarWidth, setSidebarWidth] = useState(384);
   const [isResizing, setIsResizing] = useState(false);
 
-  const startResizing = useCallback((mouseDownEvent: React.MouseEvent) => {
+  const startResizing = useCallback(() => {
     setIsResizing(true);
   }, []);
 
