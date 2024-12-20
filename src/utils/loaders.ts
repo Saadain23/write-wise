@@ -1,4 +1,3 @@
-import { Document } from "langchain/document";
 import * as cheerio from 'cheerio';
 import pdf from 'pdf-parse';
 

@@ -112,7 +112,7 @@ const EditorToolbar = () => {
     return !!match;
   };
 
-  const serializeToDocx = (nodes: any[]): any[] => {
+  const serializeToDocx = (nodes: CustomElement[] | CustomText[]): (Paragraph | TextRun)[] => {
     return nodes.map(node => {
       if (Text.isText(node)) {
         return new TextRun({
@@ -164,7 +164,7 @@ const EditorToolbar = () => {
             alignment,
           }));
         case 'numbered-list':
-          return children.map((child, i) => new Paragraph({
+          return children.map((child) => new Paragraph({
             children: [child],
             numbering: {
               reference: 'default-numbering',
@@ -185,7 +185,7 @@ const EditorToolbar = () => {
     const doc = new Document({
       sections: [{
         properties: {},
-        children: serializeToDocx(editor.children)
+        children: serializeToDocx(editor.children as CustomElement[]).filter(child => child instanceof Paragraph)
       }],
     });
 

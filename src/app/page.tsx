@@ -2,17 +2,42 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { createEditor, Descendant } from 'slate';
-import { Slate, Editable, withReact } from 'slate-react';
+import { Slate, Editable, withReact, RenderLeafProps } from 'slate-react';
 import { withHistory } from 'slate-history';
 import EditorToolbar from './components/Toolbar';
 import Chat from './components/Chat';
+
+type CustomElement = {
+  type: string;
+  align?: string;
+  children: CustomText[];
+};
+
+type CustomText = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strike?: boolean;
+  code?: boolean;
+};
+
+type LeafProps = RenderLeafProps & {
+  leaf: CustomText;
+};
+
+type ElementProps = {
+  attributes: React.HTMLAttributes<HTMLElement>;
+  children: React.ReactNode;
+  element: CustomElement;
+};
 
 const defaultValue: Descendant[] = [{ 
   type: 'paragraph', 
   children: [{ text: '' }] 
 }];
 
-const Leaf = ({ attributes, children, leaf }: any) => {
+const Leaf = ({ attributes, children, leaf }: LeafProps) => {
   if (leaf.bold) {
     children = <strong>{children}</strong>;
   }
@@ -31,7 +56,7 @@ const Leaf = ({ attributes, children, leaf }: any) => {
   return <span {...attributes}>{children}</span>;
 };
 
-const Element = ({ attributes, children, element }: any) => {
+const Element = ({ attributes, children, element }: ElementProps) => {
   const getAlignClass = (align?: string) => {
     switch (align) {
       case 'left': return 'text-left';
@@ -83,21 +108,28 @@ export default function Home() {
     setIsResizing(false);
   }, []);
 
-  const resize = useCallback((mouseMoveEvent: React.MouseEvent) => {
+  const resize = useCallback((mouseMoveEvent: React.MouseEvent<HTMLDivElement>) => {
     if (isResizing) {
       const width = document.body.clientWidth - mouseMoveEvent.clientX;
       setSidebarWidth(Math.min(Math.max(width, 280), 800));
     }
   }, [isResizing]);
 
+  const handleWindowMouseMove = useCallback((e: MouseEvent) => {
+    if (isResizing) {
+      const width = document.body.clientWidth - e.clientX;
+      setSidebarWidth(Math.min(Math.max(width, 280), 800));
+    }
+  }, [isResizing]);
+
   useEffect(() => {
-    window.addEventListener('mousemove', resize as any);
+    window.addEventListener('mousemove', handleWindowMouseMove);
     window.addEventListener('mouseup', stopResizing);
     return () => {
-      window.removeEventListener('mousemove', resize as any);
+      window.removeEventListener('mousemove', handleWindowMouseMove);
       window.removeEventListener('mouseup', stopResizing);
     };
-  }, [resize, stopResizing]);
+  }, [handleWindowMouseMove, stopResizing]);
 
   useEffect(() => {
     const savedContent = localStorage.getItem('journal-content');
