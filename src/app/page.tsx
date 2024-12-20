@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { createEditor, Descendant } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import EditorToolbar from './components/Toolbar';
+import Chat from './components/Chat';
 
 const defaultValue: Descendant[] = [{ 
   type: 'paragraph', 
@@ -71,6 +72,32 @@ export default function Home() {
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
   
   const [value, setValue] = useState<Descendant[]>(defaultValue);
+  const [sidebarWidth, setSidebarWidth] = useState(384);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = useCallback((mouseDownEvent: React.MouseEvent) => {
+    setIsResizing(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((mouseMoveEvent: React.MouseEvent) => {
+    if (isResizing) {
+      const width = document.body.clientWidth - mouseMoveEvent.clientX;
+      setSidebarWidth(Math.min(Math.max(width, 280), 800));
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', resize as any);
+    window.addEventListener('mouseup', stopResizing);
+    return () => {
+      window.removeEventListener('mousemove', resize as any);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [resize, stopResizing]);
 
   useEffect(() => {
     const savedContent = localStorage.getItem('journal-content');
@@ -85,28 +112,36 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex" onMouseMove={resize}>
       {/* Main Editor Area */}
       <main className="flex-1 p-6 bg-background">
         <div className="h-full border border-border rounded-lg p-4 bg-surface">
           <Slate editor={editor} initialValue={value} onChange={handleChange}>
             <EditorToolbar />
-            <Editable
-              className="w-full h-[calc(100vh-12rem)] focus:outline-none text-black"
-              placeholder="Start writing your journal entry..."
-              renderLeaf={(props) => <Leaf {...props} />}
-              renderElement={(props) => <Element {...props} />}
-            />
+            <div className="overflow-y-auto h-[calc(100vh-12rem)]">
+              <Editable
+                className="w-full focus:outline-none text-black"
+                placeholder="Start writing your journal entry..."
+                renderLeaf={(props) => <Leaf {...props} />}
+                renderElement={(props) => <Element {...props} />}
+              />
+            </div>
           </Slate>
         </div>
       </main>
 
+      {/* Resize Handle */}
+      <div
+        className="w-1 cursor-col-resize bg-border hover:bg-primary/50 active:bg-primary"
+        onMouseDown={startResizing}
+      />
+
       {/* Chat Sidebar */}
-      <aside className="w-96 border-l border-border bg-surface-secondary p-4">
-        <div className="text-lg font-semibold text-black mb-4">Chat</div>
-        <div className="h-[calc(100vh-8rem)] overflow-y-auto">
-          {/* Chat content */}
-        </div>
+      <aside 
+        className="border-l border-border bg-surface-secondary p-4"
+        style={{ width: sidebarWidth }}
+      >
+        <Chat editorContent={value} />
       </aside>
     </div>
   );
